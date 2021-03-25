@@ -1,172 +1,134 @@
 # Wappalyzer
 
-## Install
+[Wappalyzer](https://www.wappalyzer.com/) indentifies technologies on websites. 
 
-Install wappalyzer from NPM with:
+*Note:* The [wappalyzer-core](https://www.npmjs.com/package/wappalyzer-core) package provides a low-level API without dependencies.
 
-```bash
-npm install wappalyzer
+## Command line
+
+### Installation
+
+```shell
+$ npm i -g wappalyzer
 ```
-## Quickstart
+
+### Usage
+
+```
+wappalyzer <url> [options]
+```
+
+#### Options
+
+```
+-b, --batch-size=...     Process links in batches
+-d, --debug              Output debug messages
+-t, --delay=ms           Wait for ms milliseconds between requests
+-h, --help               This text
+--html-max-cols=...      Limit the number of HTML characters per line processed
+--html-max-rows=...      Limit the number of HTML lines processed
+-D, --max-depth=...      Don't analyse pages more than num levels deep
+-m, --max-urls=...       Exit when num URLs have been analysed
+-w, --max-wait=...       Wait no more than ms milliseconds for page resources to load
+-P, --pretty             Pretty-print JSON output
+-p, --probe              Perform a deeper scan by requesting common files
+-r, --recursive          Follow links on pages (crawler)
+-a, --user-agent=...     Set the user agent string
+```
+
+
+## Dependency
+
+### Installation
+
+```shell
+$ npm i wappalyzer
+```
+
+### Usage
 
 ```javascript
-// load in the lib
-var wappalyzer = require("wappalyzer");
+const Wappalyzer = require('wappalyzer');
 
-// set our options
-var options={
+const url = 'https://www.wappalyzer.com';
 
-  url : "http://codelanka.github.io/Presentation-Engines",
-  hostname:"codelanka.github.io",
-  debug:false
-
-}
-
-// detect from the url directly, library will make a request
-wappalyzer.detectFromUrl(options,function  (err,apps,appInfo) {
-
-  // output for the test
-  console.dir(apps);
-  console.dir(appInfo);
-
-})
-
-// sample data
-var data = {
-
-  url: options.url,
-  headers: {
-
-    test: 1
-
-  },
-  html: '<p>HTML CONTENT OF PAGE HERE</p>'
-
+const options = {
+  debug: false,
+  delay: 500,
+  headers: {},
+  maxDepth: 3,
+  maxUrls: 10,
+  maxWait: 5000,
+  recursive: true,
+  probe: true,
+  userAgent: 'Wappalyzer',
+  htmlMaxCols: 2000,
+  htmlMaxRows: 2000,
 };
 
-// detect from content you have already
-wappalyzer.detectFromHTML(options,function  (err,apps,appInfo) {
+const wappalyzer = new Wappalyzer(options)
 
-  // output for the test
-  console.dir(apps);
-  console.log(appInfo);
+;(async function() {
+  try {
+    await wappalyzer.init()
 
-})
+    // Optionally set additional request headers
+    const headers = {}
+
+    const site = await wappalyzer.open(url, headers)
+
+    // Optionally capture and output errors
+    site.on('error', console.error)
+
+    const results = await site.analyze()
+
+    console.log(JSON.stringify(results, null, 2))
+  } catch (error) {
+    console.error(error)
+  }
+
+  await wappalyzer.destroy()
+})()
 ```
-### Output from QuickStart
+
+Multiple URLs can be processed in parallel:
 
 ```javascript
+const Wappalyzer = require('wappalyzer');
 
-// Apps
-[ 
-  'CloudFlare',
-  'Font Awesome',
-  'Google Maps',
-  'Modernizr',
-  'Nginx',
-  'RequireJS',
-  'jQuery' 
-]
+const urls = ['https://www.wappalyzer.com', 'https://www.example.com']
 
-// Detailed info on links
-{ 
-  CloudFlare: { 
-    app: 'CloudFlare',
-    confidence: { 'headers Server /cloudflare/i': 100 },
-    confidenceTotal: 100,
-    detected: true,
-    excludes: [],
-    version: '',
-    versions: [] 
-  },
-  'Font Awesome': { 
-    app: 'Font Awesome',
-    confidence: { 'html /<link[^>]* href=[^>]+font-awesome(?:\.min)?\.css/i': 100 },
-    confidenceTotal: 100,
-    detected: true,
-    excludes: [],
-    version: '',
-    versions: [] 
-  },
-  'Google Maps': { 
-    app: 'Google Maps',
-    confidence: { 'script ///maps.googleapis.com/maps/api/js/i': 100 },
-    confidenceTotal: 100,
-    detected: true,
-    excludes: [],
-    version: '',
-    versions: [] 
-  },
-  'Modernizr': { 
-    app: 'Modernizr',
-    confidence: { 'script /modernizr(?:-([\d.]*[\d]))?.*\.js/i': 100 },
-    confidenceTotal: 100,
-    detected: true,
-    excludes: [],
-    version: '2.6.2',
-    versions: [ '2.6.2' ] 
-  },
-  'Nginx': { 
-    app: 'Nginx',
-    confidence: { 'headers Server /nginx(?:/([\d.]+))?/i': 100 },
-    confidenceTotal: 100,
-    detected: true,
-    excludes: [],
-    version: '',
-    versions: [] 
-  },
-  'RequireJS': { 
-    app: 'RequireJS',
-    confidence: { 'script /require.*\.js/i': 100 },
-    confidenceTotal: 100,
-    detected: true,
-    excludes: [],
-    version: '',
-    versions: [] 
-  },
-  'jQuery': { 
-    app: 'jQuery',
-    confidence: 
-    { 'script //([\d.]+)/jquery(\.min)?\.js/i': 100,
-    'script /jquery.*\.js/i': 100 },
-    confidenceTotal: 100,
-    detected: true,
-    excludes: [],
-    version: '1.10.1',
-    versions: [ '1.10.1' ] 
-  } 
-}
+const wappalyzer = new Wappalyzer()
+
+;(async function() {
+  try {
+    await wappalyzer.init()
+
+    const results = await Promise.all(
+      urls.map(async (url) => ({
+        url,
+        results: await wappalyzer.open(url).analyze()
+      }))
+    )
+
+    console.log(JSON.stringify(results, null, 2))
+  } catch (error) {
+    console.error(error)
+  }
+
+  await wappalyzer.destroy()
+})()
 ```
-## Credits
 
-### Wappalyzer Author - Elbert Alias
+### Events
 
-[Wappalyzer](https://wappalyzer.com/) is a
-[cross-platform](https://github.com/AliasIO/Wappalyzer/wiki/Drivers) utility that uncovers the
-technologies used on websites.  It detects
-[content management systems](https://wappalyzer.com/categories/cms),
-[eCommerce platforms](https://wappalyzer.com/categories/ecommerce),
-[web servers](https://wappalyzer.com/categories/web-servers),
-[JavaScript frameworks](https://wappalyzer.com/categories/javascript-frameworks),
-[analytics tools](https://wappalyzer.com/categories/analytics) and
-[many more](https://wappalyzer.com/applications).
+Listen to events with `site.on(eventName, callback)`. Use the `page` parameter to access the Puppeteer page instance ([reference](https://github.com/puppeteer/puppeteer/blob/main/docs/api.md#class-page)).
 
-Refer to the [wiki](https://github.com/AliasIO/Wappalyzer/wiki) for
-[screenshots](https://github.com/AliasIO/Wappalyzer/wiki/Screenshots), information on how to
-[contribute](https://github.com/AliasIO/Wappalyzer/wiki/Contributing) and
-[more](https://github.com/AliasIO/Wappalyzer/wiki/_pages).
-
-### NPM Module
-
-* [Pasindu De Silva](https://github.com/pasindud) - Initial version with tests
-* [Johann du Toit](http://johanndutoit.net) from [Passmarked](http://passmarked.com) - Updated to support just passing data and helped publish to NPMJS
-
-## License
-
-*Licensed under the [GPL](https://github.com/AliasIO/Wappalyzer/blob/master/LICENSE).*
-
-## Donations
-
-Donate Bitcoin: 16gb4uGDAjaeRJwKVmKr2EXa8x2fmvT8EQ - *Thanks!*
-
-![QR Code](https://wappalyzer.com/sites/default/themes/wappalyzer/images/bitcoinqrcode.png)
+| Event       | Parameters                     | Description                              |
+|-------------|--------------------------------|------------------------------------------|
+| `log`       | `message`, `source`            | Debug messages                           |
+| `error`     | `message`, `source`            | Error messages                           |
+| `request`   | `page`, `request`              | Emitted at the start of a request        |
+| `response`  | `page`, `request`              | Emitted upon receiving a server response |
+| `goto`      | `page`, `url`, `html`, `cookies`, `scripts`, `meta`, `js`, `language` `links` | Emitted after a page has been analysed |
+| `analyze`   | `urls`, `technologies`, `meta` | Emitted when the site has been analysed |

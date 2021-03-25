@@ -1,19 +1,19 @@
-.vagrant
+/build/*
+/src/drivers/**/technologies.json
+/src/drivers/**/wappalyzer.js
+/src/drivers/webextension/images/icons/converted/*
 
-build/*
-
-drivers/npm/node_modules
-drivers/npm/npm-debug.log
-
-src/icons/converted/*
-
-package.json
-node_modules/
-npm-debug.log
-
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
+node_modules
+package-lock.json
 
 !.gitkeep
+
+Thumbs.db
+Desktop.ini
+*.DS_Store
+*.log
+._*
+tags
+tags.*
+.idea
+/nbproject/private/
